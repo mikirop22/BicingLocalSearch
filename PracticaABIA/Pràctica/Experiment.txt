@@ -1,0 +1,613 @@
+**EXPERIMENT 1**:
+
+Per aquest experiment, no hem pogut modificar els valors desde el fitxer main, ja que els operadors no estàn disponibles desde el main. És per això que no hem modificat el main, i per tant no adjuntem cap tros de codi de l’experiment. 
+
+
+**EXPERIMENT 2**:
+
+-- Codi utilitzat per crear la taula amb els temps i el benefici promig:
+
+import matplotlib
+import numpy as np
+matplotlib.use('agg')
+
+import matplotlib.pyplot as plt
+from timeit import timeit
+from aima.search import hill_climbing
+from abia_bicing_parametres import ProblemParameters
+from abia_bicing_problem import BicingProblem
+from abia_bicing import Estaciones
+from abia_bicing_estat import generate_initial_state, generate_initial_state_greedy
+
+
+# Definim les estaciones i paràmetres
+param_configs = []
+for j in range(10):
+    estaciones = Estaciones(25, 1250, j)
+    parametres = ProblemParameters(estaciones, 5)
+    param_configs.append(parametres)
+
+i=0
+for config in param_configs:
+    resultados = []
+    i+=1
+    for _ in range(5):
+        # Cree un problema amb la configuració actual
+        problem = BicingProblem(generate_initial_state_greedy(config))
+            # Executem hill climbing i mesurem el temps
+        tiempo_ms = [timeit(lambda: hill_climbing(problem), number=1) * 1000 for _ in range(10)]
+        resultados.append(tiempo_ms)
+    media = np.mean(tiempo_ms)
+    print("Temps",i,round(media,2))
+   
+
+
+
+
+print("\n\n")
+# Llista per emmagatzemar els resultats de la heurística per a cada conjunt de configuracions
+# Iterem a través de les diferents configuracions de paràmetres
+i=0
+for config in param_configs:
+    resultados = []
+    i+=1
+    for _ in range(10):
+        # Cree un problema amb la configuració actual
+        problem = BicingProblem(generate_initial_state_greedy(config))
+        # Executem hill climbing i calculem el resultat de la heurística
+        resultado_heuristica = hill_climbing(problem).heuristic()
+        resultados.append(resultado_heuristica)
+    media = np.mean(resultados)
+    print("Solucio",i, round(media,2))
+
+
+
+-- Codi utilitzat per crear els gràfics:
+
+import matplotlib.pyplot as plt
+import numpy as np
+from timeit import timeit
+from aima.search import hill_climbing
+from abia_bicing_parametres import ProblemParameters
+from abia_bicing_problem import BicingProblem
+from abia_bicing import Estaciones
+from abia_bicing_estat import generate_initial_state, generate_initial_state_greedy
+
+
+param_configs = []
+for j in range(10):
+    estaciones = Estaciones(25, 1250, j)
+    parametres = ProblemParameters(estaciones, 5)
+    param_configs.append(parametres)
+
+
+tiempos_greedy = []  # Lista para almacenar los tiempos medios (estado inicial greedy)
+beneficios_greedy = []  # Lista para almacenar los beneficios medios (estado inicial greedy)
+tiempos_normal = []  # Lista para almacenar los tiempos medios (estado inicial normal)
+beneficios_normal = []  # Lista para almacenar los beneficios medios (estado inicial normal)
+
+
+for config in param_configs:
+    tiempos_config_greedy = []
+    tiempos_config_normal = []
+    beneficios_config_greedy = []
+    beneficios_config_normal = []
+   
+    for _ in range(5):
+        # Crea un problema con la configuración actual y estado inicial greedy
+        problem_greedy = BicingProblem(generate_initial_state_greedy(config))
+        tiempo_ms_greedy = [timeit(lambda: hill_climbing(problem_greedy), number=1) * 1000 for _ in range(10)]
+        tiempos_config_greedy.append(np.mean(tiempo_ms_greedy))
+        resultado_heuristica_greedy = hill_climbing(problem_greedy).heuristic()
+        beneficios_config_greedy.append(resultado_heuristica_greedy)
+
+
+        # Crea un problema con la configuración actual y estado inicial normal
+        problem_normal = BicingProblem(generate_initial_state(config))
+        tiempo_ms_normal = [timeit(lambda: hill_climbing(problem_normal), number=1) * 1000 for _ in range(10)]
+        tiempos_config_normal.append(np.mean(tiempo_ms_normal))
+        resultado_heuristica_normal = hill_climbing(problem_normal).heuristic()
+        beneficios_config_normal.append(resultado_heuristica_normal)
+
+
+    tiempos_greedy.append(np.mean(tiempos_config_greedy))
+    beneficios_greedy.append(np.mean(beneficios_config_greedy))
+    tiempos_normal.append(np.mean(tiempos_config_normal))
+    beneficios_normal.append(np.mean(beneficios_config_normal))
+
+
+# Graficamos el tiempo
+plt.figure()
+plt.plot(range(10), tiempos_greedy, marker='o', label='Greedy')
+plt.plot(range(10), tiempos_normal, marker='x', label='Normal')
+plt.title('Tiempo Promedio')
+plt.xlabel('Configuración de Parámetros')
+plt.ylabel('Tiempo (ms)')
+plt.xticks(range(10))
+plt.legend()
+plt.show()
+
+
+# Graficamos el beneficio
+plt.figure()
+plt.plot(range(10), beneficios_greedy, marker='o', color='red', label='Greedy')
+plt.plot(range(10), beneficios_normal, marker='x', color='blue', label='Normal')
+plt.title('Beneficio Promedio')
+plt.xlabel('Configuración de Parámetros')
+plt.ylabel('Beneficio')
+plt.xticks(range(10))
+plt.legend()
+plt.show()
+
+
+
+
+EXPERIMENT 3:
+
+Primer de tot hem modificat el fitxer abia_bicing_problem.py per poder representar el benefici obtingut per cada estat: 
+
+from typing import Generator
+
+from aima.search import Problem
+
+from abia_bicing_operators import BicingOperator
+from abia_bicing_estat_h1_SA import Estat
+
+class BicingProblem(Problem):
+    def __init__(self, initial_state: Estat):
+        super().__init__(initial_state)
+        self.benefit_evolution = []  # Llista per emmagatzemar els beneficis a cada iteració
+
+    def actions(self, state: Estat) -> Generator[BicingOperator, None, None]:
+        return state.generate_actions()
+
+    def result(self, state: Estat, action: BicingOperator) -> Estat:
+        new_state = state.aplicar_accions(action)
+        current_benefit = new_state.heuristic()
+        self.benefit_evolution.append(current_benefit)  # Guarda el benefici o heurística a cada iteració
+        return new_state
+
+    def value(self, state: Estat) -> float:
+        return state.heuristic()
+
+    def goal_test(self, state: Estat) -> bool:
+        return False
+
+
+
+Primera gràfica (evolució benefici amb 1000 iteracions):
+
+estaciones = Estaciones(25, 1250, 42)
+parametres = ProblemParameters(estaciones, 5)
+estat_inicial = generate_initial_state(parametres)
+estat_inicial_greedy = generate_initial_state_greedy(parametres)
+
+
+num_iteracions = 1000
+k = 5
+lmbda = 0.01
+
+params = schedule=exp_schedule(k, lmbda, num_iteracions)
+
+problem = BicingProblem(estat_inicial_greedy)
+
+# Executa l'algorisme
+result = simulated_annealing(problem, params)
+
+# Crea el gràfic amb l'evolució del benefici
+plt.plot(range(len(problem.benefit_evolution)), problem.benefit_evolution)
+plt.xlabel('Iteracions')
+plt.ylabel('Benefici')
+plt.title('Evolució del Benefici amb Simulated Annealing')
+
+# Mostrar el gráfico
+plt.savefig('params_sim_annealing_prova1.png')
+
+
+Segon plot (10000 iteracions):
+
+Només canviem: 
+
+num_iteracions = 10000
+
+Tercera part (1500 iteracions):
+
+num_iteracions = 1500
+
+
+4. CANVIEM LES K:
+
+k = 1
+k = 5
+k = 25
+
+5. CANVIEM LES LAMBDA:
+
+lmbda = 0.001
+lmbda = 0.00001
+lmbda = 0.00000001
+
+6. GENEREM GRÀFIC AMB TOTES LES COMBINACIONS DELS PARÀMETRES:
+
+# Valors de k i λ que volem provar
+k_values = [1, 5, 25, 125]
+lambda_values = [1, 0.01, 0.0001]
+num_iteracions = 1500
+
+# Crear una llista per emmagatzemar el benefici promig per cada combinació
+average_benefits = []
+
+for k in k_values:
+    average_benefits_row = []  # Llista per emmagatzemar els beneficis per a un valor de k
+    for lmbda in lambda_values:
+        # Configurar els paràmetres
+        params = schedule=exp_schedule(k, lmbda, num_iteracions)
+        
+        # Crear el problema i executar l'algorisme
+        problem = BicingProblem(estat_inicial_greedy)
+        result = simulated_annealing(problem, params)
+        
+        # Registrar el benefici obtingut
+        average_benefits_row.append(np.mean(problem.benefit_evolution))
+    
+    # Afegir la llista de beneficis mitjans per a aquest valor de k a la llista principal
+    average_benefits.append(average_benefits_row)
+
+# Crear el gràfic
+plt.figure()
+for i, k in enumerate(k_values):
+    plt.plot(lambda_values, average_benefits[i], label=f'k = {k}')
+
+plt.xlabel('Valor de λ')
+plt.ylabel('Benefici Mitjà')
+plt.title('Evolució del Benefici Mitjà amb Diferents Valors de k i λ')
+plt.legend()
+
+plt.savefig('params_sim_annealing_prova8.png')
+
+
+- 3D:
+
+# Valors de k i λ que vols provar
+k_values = [1, 5, 25, 125]
+lambda_values = [1, 0.01, 0.0001]
+num_iteracions = 1500
+
+# Crear una llista per emmagatzemar el benefici promig per cada combinació
+average_benefits = []
+
+for k in k_values:
+    average_benefits_row = []  # Llista per emmagatzemar els beneficis per a un valor de k
+    for lmbda in lambda_values:
+        # Configurar els paràmetres
+        params = schedule=exp_schedule(k, lmbda, num_iteracions)
+        
+        # Crear el problema i executar l'algorisme
+        problem = BicingProblem(estat_inicial_greedy)
+        result = simulated_annealing(problem, params)
+        
+        # Registrar el benefici obtingut
+        average_benefits_row.append(np.mean(problem.benefit_evolution))
+    
+    # Afegir la llista de beneficis per a aquest valor de k a la llista principal
+    average_benefits.append(average_benefits_row)
+
+# Convertir les dades en arrays de NumPy
+k = np.array(k_values)
+lmbda = np.array(lambda_values)
+benefits = np.array(average_benefits)
+
+# Crear una matriu de coordenades per als barres
+x, y = np.meshgrid(k, lmbda, indexing='ij')
+
+# Crear el gràfic de barres agrupades
+fig = plt.figure()
+ax = fig.add_subplot(111, projection='3d')
+ax.bar3d(x.ravel(), y.ravel(), np.zeros_like(x).ravel(), 5, 5, benefits.ravel())
+
+
+# Configurar l'aspecte del gràfic
+ax.set_xlabel('Valor de k')
+ax.set_ylabel('Valor de λ')
+ax.set_zlabel('Benefici Mitjà')
+ax.set_title('Evolució del Benefici Mitjà amb Diferents Valors de k i λ')
+ 
+
+plt.savefig('params_sim_annealing_prova11.png')
+
+
+GRÀFIC FINAL:
+
+estaciones = Estaciones(25, 1250, 42)
+parametres = ProblemParameters(estaciones, 5)
+estat_inicial = generate_initial_state(parametres)
+estat_inicial_greedy = generate_initial_state_greedy(parametres)
+
+
+num_iteracions = 1500
+k = 5
+lmbda = 1
+
+params = schedule=exp_schedule(k, lmbda, num_iteracions)
+
+problem = BicingProblem(estat_inicial_greedy)
+
+# Executa l'algorisme
+result = simulated_annealing(problem, params)
+
+# Crea el gràfic amb l'evolució del benefici
+plt.plot(range(len(problem.benefit_evolution)), problem.benefit_evolution)
+plt.xlabel('Iteracions')
+plt.ylabel('Benefici')
+plt.title('Evolució del Benefici amb Simulated Annealing')
+
+# Mostrar el gráfico
+plt.savefig('params_sim_annealing_prova_final.png')
+
+
+
+**EXPERIMENT 4**:
+
+
+import matplotlib
+import numpy as np
+matplotlib.use('agg')
+
+import matplotlib.pyplot as plt
+from timeit import timeit
+from aima.search import hill_climbing
+from abia_bicing_parametres import ProblemParameters
+from abia_bicing_problem import BicingProblem
+from abia_bicing import *
+from abia_bicing_estat import generate_initial_state, generate_initial_state_greedy
+
+
+# Definimos las estaciones y parámetros
+param_configs = []
+valor_inicial = 0
+for i in range (4):
+    llista = []
+    valor_inicial+=25
+    for j in range (10):
+        estaciones = Estaciones(valor_inicial, valor_inicial*50, j)
+        parametres = ProblemParameters(estaciones, valor_inicial//5)
+        llista.append(parametres)
+    param_configs.append(llista)
+
+
+
+# Lista para almacenar los tiempos de ejecución para cada conjunto de configuraciones
+tiempos_ejecucion_por_parametro = []
+i =0
+# Itera a través de las diferentes configuraciones de parámetros
+for llista in param_configs:
+    i+=1
+    xd= []
+    for config in llista:
+        # Crea un problema con la configuración actual
+        problem = BicingProblem(generate_initial_state_greedy(config))
+
+
+        # Ejecuta hill climbing y mide el tiempo
+        tiempo_ms = timeit(lambda: hill_climbing(problem), number=1) * 1000
+        xd.append(tiempo_ms)
+
+
+    print(xd)
+    media = np.mean(xd)
+    print("Media ",i," :", round(media,2))
+    # Calcular la varianza
+    suma_cuadrados_diferencias = sum((x - media) ** 2 for x in xd)
+
+
+    # Calcular la desviación estándar
+    desviacion_estandar = (suma_cuadrados_diferencias / len(xd)) ** 0.5
+
+
+    print("La desviación estándar es:", desviacion_estandar)
+
+
+**EPERIMENT 5**:
+
+-- Codi utilitzat per crear la taula amb els valors corresponents:
+
+import matplotlib
+import numpy as np
+matplotlib.use('agg')
+
+
+import matplotlib.pyplot as plt
+from timeit import timeit
+from aima.search import hill_climbing, simulated_annealing, exp_schedule
+from abia_bicing_parametres import ProblemParameters
+from abia_bicing_problem import BicingProblem
+from abia_bicing import Estaciones
+from abia_bicing_estat_h2_HC import generate_initial_state_greedy as gisg2
+from abia_bicing_estat_h1 import generate_initial_state_greedy as gisg1
+from abia_bicing_estat_h2_SA import generate_initial_state_greedy as sa2
+from abia_bicing_estat_h1_SA import generate_initial_state_greedy as sa1
+
+
+param_configs = []
+for j in range(10):
+    estaciones = Estaciones(25, 1250, j)
+    parametres = ProblemParameters(estaciones, 5)
+    param_configs.append(parametres)
+
+
+# Lista para almacenar los resultados de la heurística para cada conjunto de configuraciones
+i = 0
+for config in param_configs:
+    resultados = []
+    i += 1
+    # Crea un problema con la configuración actual
+    problem = BicingProblem(sa2(config))
+    # Ejecuta Simulated Annealing y mide el tiempo
+    n = simulated_annealing(problem, schedule=exp_schedule(k=5, lam=0.01, limit=2000))
+    tiempo_ms = (timeit(lambda: simulated_annealing(problem, schedule=exp_schedule(k=5, lam=0.01, limit=2000)), number=1) * 1000)
+    resultados.append(tiempo_ms)
+
+
+media = np.mean(tiempo_ms)
+print("Tiempo:", round(media, 2))
+
+
+print("\n\n")
+
+
+# Lista para almacenar los resultados de la heurística para cada conjunto de configuraciones
+i = 0
+for config in param_configs:
+    resultados = []
+    i += 1
+    # Crea un problema con la configuración actual
+    problem = BicingProblem(sa2(config))
+    # Ejecuta Simulated Annealing y calcula el resultado de la heurística
+    resultado_heuristica = simulated_annealing(problem, schedule=exp_schedule(k=5, lam=0.01, limit=2000)).heuristic()
+    resultados.append(resultado_heuristica)
+
+
+media = np.mean(resultados)
+print("Solución:", round(media, 2))
+
+
+-- Gràfics:
+
+import matplotlib.pyplot as plt
+import numpy as np
+from timeit import timeit
+from aima.search import hill_climbing, simulated_annealing, exp_schedule
+from abia_bicing_parametres import ProblemParameters
+from abia_bicing_problem import BicingProblem
+from abia_bicing import Estaciones
+from abia_bicing_estat_h2_HC import generate_initial_state_greedy as gisg2
+from abia_bicing_estat_h1 import generate_initial_state_greedy as gisg1
+from abia_bicing_estat_h2_SA import generate_initial_state_greedy as sa2
+from abia_bicing_estat_h1_SA import generate_initial_state_greedy as sa1
+
+
+param_configs = []
+for j in range(10):
+    estaciones = Estaciones(25, 1250, j)
+    parametres = ProblemParameters(estaciones, 5)
+    param_configs.append(parametres)
+
+
+tiempos_sa1 = []  # Lista para almacenar los tiempos medios (sa1)
+beneficios_sa1 = []  # Lista para almacenar los beneficios medios (sa1)
+tiempos_sa2 = []  # Lista para almacenar los tiempos medios (sa2)
+beneficios_sa2 = []  # Lista para almacenar los beneficios medios (sa2)
+
+
+for config in param_configs:
+    tiempos_config_sa1 = []
+    tiempos_config_sa2 = []
+    beneficios_config_sa1 = []
+    beneficios_config_sa2 = []
+   
+    for _ in range(5):
+        # Creamos un problema con la configuración actual y estado inicial sa1
+        problem_sa1 = BicingProblem(sa1(config))
+        tiempo_ms_sa1 = [timeit(lambda: simulated_annealing(problem_sa1, schedule=exp_schedule(k=5, lam=0.01, limit=2000)), number=1) * 1000 for _ in range(5)]
+        tiempos_config_sa1.append(np.mean(tiempo_ms_sa1))
+        resultado_heuristica_sa1 = simulated_annealing(problem_sa1, schedule=exp_schedule(k=5, lam=0.01, limit=2000)).heuristic()
+        beneficios_config_sa1.append(resultado_heuristica_sa1)
+
+
+        # Creamos un problema con la configuración actual y estado inicial sa2
+        problem_sa2 = BicingProblem(sa2(config))
+        tiempo_ms_sa2 = [timeit(lambda: simulated_annealing(problem_sa2, schedule=exp_schedule(k=5, lam=0.01, limit=2000)), number=1) * 1000 for _ in range(5)]
+        tiempos_config_sa2.append(np.mean(tiempo_ms_sa2))
+        resultado_heuristica_sa2 = simulated_annealing(problem_sa2, schedule=exp_schedule(k=5, lam=0.01, limit=2000)).heuristic()
+        beneficios_config_sa2.append(resultado_heuristica_sa2)
+
+
+    tiempos_sa1.append(np.mean(tiempos_config_sa1))
+    beneficios_sa1.append(np.mean(beneficios_config_sa1))
+    tiempos_sa2.append(np.mean(tiempos_config_sa2))
+    beneficios_sa2.append(np.mean(beneficios_config_sa2))
+
+
+# Graficamos el tiempo para sa1 y sa2
+plt.figure()
+plt.plot(range(10), tiempos_sa1, marker='o', label='SA1')
+plt.plot(range(10), tiempos_sa2, marker='x', label='SA2')
+plt.title('Tiempo Promedio (Simulated Annealing)')
+plt.xlabel('Configuración de Parámetros')
+plt.ylabel('Tiempo (ms)')
+plt.xticks(range(10))
+plt.legend()
+plt.show()
+
+
+# Graficamos el beneficio para sa1 y sa2
+plt.figure()
+plt.plot(range(10), beneficios_sa1, marker='o', color='red', label='SA1')
+plt.plot(range(10), beneficios_sa2, marker='x', color='blue', label='SA2')
+plt.title('Beneficio Promedio (Simulated Annealing)')
+plt.xlabel('Configuración de Parámetros')
+plt.ylabel('Beneficio')
+plt.xticks(range(10))
+plt.legend()
+plt.show()
+
+
+**EXPERIMENT 6**:
+
+
+# Lista para almacenar los valores de furgos
+furgos_values = []
+# Lista para almacenar las medias de beneficio
+beneficio_values = [] 
+# Lista para almacenar los tiempos en milisegundos
+tiempos_values = []
+
+
+for furgos in range(5, 26, 5):
+    mitjana_benefici = 0
+    temps_en_milisegons = 0
+
+
+    for i in range(10):
+        estaciones = Estaciones(25, 1250, 10 * i)
+        parametres = ProblemParameters(estaciones, furgos)
+        estat_inicial_greedy = generate_initial_state_greedy(parametres)
+        n = hill_climbing(BicingProblem(estat_inicial_greedy))
+        mitjana_benefici += n.heuristic()
+        temps_en_milisegons += (timeit(lambda: hill_climbing(BicingProblem(estat_inicial_greedy)), number=1) * 1000)
+
+
+    print(furgos, "Furgonetes")
+    print("Benefici total", mitjana_benefici)
+    print("Mitjana de benefici",mitjana_benefici/10)
+    print("Benefici mitjà per furgoneta", round(mitjana_benefici/10/furgos,2))
+    print(round(temps_en_milisegons/10,2),"ms")
+    print("")
+    furgos_values.append(furgos)
+    beneficio_values.append(mitjana_benefici / 10)  # Calcula la media de beneficio
+    tiempos_values.append(temps_en_milisegons / 10)
+
+
+
+-- Gràfics:
+
+plt.figure(figsize=(10, 5))
+plt.subplot(121)
+plt.plot(furgos_values, beneficio_values, marker='o', label='Beneficio Medio')
+plt.xlabel('Número de Furgonetas')
+plt.ylabel('Beneficio Medio')
+plt.title('Beneficio Medio por Número de Furgonetas')
+
+# Establecer el límite inferior del eje Y en 0
+plt.ylim(ymin=0)
+
+plt.subplot(122)
+plt.plot(furgos_values, tiempos_values, marker='o', label='Tiempo Promedio')
+plt.xlabel('Número de Furgonetas')
+plt.ylabel('Tiempo Promedio (ms)')
+plt.title('Tiempo Promedio por Número de Furgonetas')
+
+plt.tight_layout()
+
+plt.savefig('beneficis.png')
+

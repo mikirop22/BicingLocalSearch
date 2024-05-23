@@ -1,0 +1,62 @@
+**EXPERIMENT 4**:
+
+
+import matplotlib
+import numpy as np
+matplotlib.use('agg')
+
+import matplotlib.pyplot as plt
+from timeit import timeit
+from aima.search import hill_climbing
+from abia_bicing_parametres import ProblemParameters
+from abia_bicing_problem import BicingProblem
+from abia_bicing import *
+from abia_bicing_estat import generate_initial_state, generate_initial_state_greedy
+
+
+# Definimos las estaciones y parámetros
+param_configs = []
+valor_inicial = 0
+for i in range (4):
+    llista = []
+    valor_inicial+=25
+    for j in range (10):
+        estaciones = Estaciones(valor_inicial, valor_inicial*50, j)
+        parametres = ProblemParameters(estaciones, valor_inicial//5)
+        llista.append(parametres)
+    param_configs.append(llista)
+
+
+
+# Lista para almacenar los tiempos de ejecución para cada conjunto de configuraciones
+tiempos_ejecucion_por_parametro = []
+i =0
+# Itera a través de las diferentes configuraciones de parámetros
+for llista in param_configs:
+    i+=1
+    xd= []
+    for config in llista:
+        # Crea un problema con la configuración actual
+        problem = BicingProblem(generate_initial_state_greedy(config))
+
+
+        # Ejecuta hill climbing y mide el tiempo
+        tiempo_ms = timeit(lambda: hill_climbing(problem), number=1) * 1000
+        xd.append(tiempo_ms)
+
+
+    print(xd)
+    media = np.mean(xd)
+    print("Media ",i," :", round(media,2))
+    # Calcular la varianza
+    suma_cuadrados_diferencias = sum((x - media) ** 2 for x in xd)
+
+
+    # Calcular la desviación estándar
+    desviacion_estandar = (suma_cuadrados_diferencias / len(xd)) ** 0.5
+
+
+    print("La desviación estándar es:", desviacion_estandar)
+
+
+

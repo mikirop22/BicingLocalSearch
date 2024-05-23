@@ -1,0 +1,203 @@
+
+EXPERIMENT 3:
+
+Primer de tot hem modificat el fitxer abia_bicing_problem.py per poder representar el benefici obtingut per cada estat: 
+
+from typing import Generator
+
+from aima.search import Problem
+
+from abia_bicing_operators import BicingOperator
+from abia_bicing_estat_h1_SA import Estat
+
+class BicingProblem(Problem):
+    def __init__(self, initial_state: Estat):
+        super().__init__(initial_state)
+        self.benefit_evolution = []  # Llista per emmagatzemar els beneficis a cada iteració
+
+    def actions(self, state: Estat) -> Generator[BicingOperator, None, None]:
+        return state.generate_actions()
+
+    def result(self, state: Estat, action: BicingOperator) -> Estat:
+        new_state = state.aplicar_accions(action)
+        current_benefit = new_state.heuristic()
+        self.benefit_evolution.append(current_benefit)  # Guarda el benefici o heurística a cada iteració
+        return new_state
+
+    def value(self, state: Estat) -> float:
+        return state.heuristic()
+
+    def goal_test(self, state: Estat) -> bool:
+        return False
+
+
+
+Primera gràfica (evolució benefici amb 1000 iteracions):
+
+estaciones = Estaciones(25, 1250, 42)
+parametres = ProblemParameters(estaciones, 5)
+estat_inicial = generate_initial_state(parametres)
+estat_inicial_greedy = generate_initial_state_greedy(parametres)
+
+
+num_iteracions = 1000
+k = 5
+lmbda = 0.01
+
+params = schedule=exp_schedule(k, lmbda, num_iteracions)
+
+problem = BicingProblem(estat_inicial_greedy)
+
+# Executa l'algorisme
+result = simulated_annealing(problem, params)
+
+# Crea el gràfic amb l'evolució del benefici
+plt.plot(range(len(problem.benefit_evolution)), problem.benefit_evolution)
+plt.xlabel('Iteracions')
+plt.ylabel('Benefici')
+plt.title('Evolució del Benefici amb Simulated Annealing')
+
+# Mostrar el gráfico
+plt.savefig('params_sim_annealing_prova1.png')
+
+
+Segon plot (10000 iteracions):
+
+Només canviem: 
+
+num_iteracions = 10000
+
+Tercera part (1500 iteracions):
+
+num_iteracions = 1500
+
+
+4. CANVIEM LES K:
+
+k = 1
+k = 5
+k = 25
+
+5. CANVIEM LES LAMBDA:
+
+lmbda = 0.001
+lmbda = 0.00001
+lmbda = 0.00000001
+
+6. GENEREM GRÀFIC AMB TOTES LES COMBINACIONS DELS PARÀMETRES:
+
+# Valors de k i λ que volem provar
+k_values = [1, 5, 25, 125]
+lambda_values = [1, 0.01, 0.0001]
+num_iteracions = 1500
+
+# Crear una llista per emmagatzemar el benefici promig per cada combinació
+average_benefits = []
+
+for k in k_values:
+    average_benefits_row = []  # Llista per emmagatzemar els beneficis per a un valor de k
+    for lmbda in lambda_values:
+        # Configurar els paràmetres
+        params = schedule=exp_schedule(k, lmbda, num_iteracions)
+        
+        # Crear el problema i executar l'algorisme
+        problem = BicingProblem(estat_inicial_greedy)
+        result = simulated_annealing(problem, params)
+        
+        # Registrar el benefici obtingut
+        average_benefits_row.append(np.mean(problem.benefit_evolution))
+    
+    # Afegir la llista de beneficis mitjans per a aquest valor de k a la llista principal
+    average_benefits.append(average_benefits_row)
+
+# Crear el gràfic
+plt.figure()
+for i, k in enumerate(k_values):
+    plt.plot(lambda_values, average_benefits[i], label=f'k = {k}')
+
+plt.xlabel('Valor de λ')
+plt.ylabel('Benefici Mitjà')
+plt.title('Evolució del Benefici Mitjà amb Diferents Valors de k i λ')
+plt.legend()
+
+plt.savefig('params_sim_annealing_prova8.png')
+
+
+- 3D:
+
+# Valors de k i λ que vols provar
+k_values = [1, 5, 25, 125]
+lambda_values = [1, 0.01, 0.0001]
+num_iteracions = 1500
+
+# Crear una llista per emmagatzemar el benefici promig per cada combinació
+average_benefits = []
+
+for k in k_values:
+    average_benefits_row = []  # Llista per emmagatzemar els beneficis per a un valor de k
+    for lmbda in lambda_values:
+        # Configurar els paràmetres
+        params = schedule=exp_schedule(k, lmbda, num_iteracions)
+        
+        # Crear el problema i executar l'algorisme
+        problem = BicingProblem(estat_inicial_greedy)
+        result = simulated_annealing(problem, params)
+        
+        # Registrar el benefici obtingut
+        average_benefits_row.append(np.mean(problem.benefit_evolution))
+    
+    # Afegir la llista de beneficis per a aquest valor de k a la llista principal
+    average_benefits.append(average_benefits_row)
+
+# Convertir les dades en arrays de NumPy
+k = np.array(k_values)
+lmbda = np.array(lambda_values)
+benefits = np.array(average_benefits)
+
+# Crear una matriu de coordenades per als barres
+x, y = np.meshgrid(k, lmbda, indexing='ij')
+
+# Crear el gràfic de barres agrupades
+fig = plt.figure()
+ax = fig.add_subplot(111, projection='3d')
+ax.bar3d(x.ravel(), y.ravel(), np.zeros_like(x).ravel(), 5, 5, benefits.ravel())
+
+
+# Configurar l'aspecte del gràfic
+ax.set_xlabel('Valor de k')
+ax.set_ylabel('Valor de λ')
+ax.set_zlabel('Benefici Mitjà')
+ax.set_title('Evolució del Benefici Mitjà amb Diferents Valors de k i λ')
+ 
+
+plt.savefig('params_sim_annealing_prova11.png')
+
+
+GRÀFIC FINAL:
+
+estaciones = Estaciones(25, 1250, 42)
+parametres = ProblemParameters(estaciones, 5)
+estat_inicial = generate_initial_state(parametres)
+estat_inicial_greedy = generate_initial_state_greedy(parametres)
+
+
+num_iteracions = 1500
+k = 5
+lmbda = 1
+
+params = schedule=exp_schedule(k, lmbda, num_iteracions)
+
+problem = BicingProblem(estat_inicial_greedy)
+
+# Executa l'algorisme
+result = simulated_annealing(problem, params)
+
+# Crea el gràfic amb l'evolució del benefici
+plt.plot(range(len(problem.benefit_evolution)), problem.benefit_evolution)
+plt.xlabel('Iteracions')
+plt.ylabel('Benefici')
+plt.title('Evolució del Benefici amb Simulated Annealing')
+
+# Mostrar el gráfico
+plt.savefig('params_sim_annealing_prova_final.png')
+

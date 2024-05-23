@@ -1,0 +1,137 @@
+**EXPERIMENT 2**:
+
+-- Codi utilitzat per crear la taula amb els temps i el benefici promig:
+
+import matplotlib
+import numpy as np
+matplotlib.use('agg')
+
+import matplotlib.pyplot as plt
+from timeit import timeit
+from aima.search import hill_climbing
+from abia_bicing_parametres import ProblemParameters
+from abia_bicing_problem import BicingProblem
+from abia_bicing import Estaciones
+from abia_bicing_estat import generate_initial_state, generate_initial_state_greedy
+
+
+# Definim les estaciones i paràmetres
+param_configs = []
+for j in range(10):
+    estaciones = Estaciones(25, 1250, j)
+    parametres = ProblemParameters(estaciones, 5)
+    param_configs.append(parametres)
+
+i=0
+for config in param_configs:
+    resultados = []
+    i+=1
+    for _ in range(5):
+        # Cree un problema amb la configuració actual
+        problem = BicingProblem(generate_initial_state_greedy(config))
+            # Executem hill climbing i mesurem el temps
+        tiempo_ms = [timeit(lambda: hill_climbing(problem), number=1) * 1000 for _ in range(10)]
+        resultados.append(tiempo_ms)
+    media = np.mean(tiempo_ms)
+    print("Temps",i,round(media,2))
+   
+
+
+
+
+print("\n\n")
+# Llista per emmagatzemar els resultats de la heurística per a cada conjunt de configuracions
+# Iterem a través de les diferents configuracions de paràmetres
+i=0
+for config in param_configs:
+    resultados = []
+    i+=1
+    for _ in range(10):
+        # Cree un problema amb la configuració actual
+        problem = BicingProblem(generate_initial_state_greedy(config))
+        # Executem hill climbing i calculem el resultat de la heurística
+        resultado_heuristica = hill_climbing(problem).heuristic()
+        resultados.append(resultado_heuristica)
+    media = np.mean(resultados)
+    print("Solucio",i, round(media,2))
+
+
+
+-- Codi utilitzat per crear els gràfics:
+
+import matplotlib.pyplot as plt
+import numpy as np
+from timeit import timeit
+from aima.search import hill_climbing
+from abia_bicing_parametres import ProblemParameters
+from abia_bicing_problem import BicingProblem
+from abia_bicing import Estaciones
+from abia_bicing_estat import generate_initial_state, generate_initial_state_greedy
+
+
+param_configs = []
+for j in range(10):
+    estaciones = Estaciones(25, 1250, j)
+    parametres = ProblemParameters(estaciones, 5)
+    param_configs.append(parametres)
+
+
+tiempos_greedy = []  # Lista para almacenar los tiempos medios (estado inicial greedy)
+beneficios_greedy = []  # Lista para almacenar los beneficios medios (estado inicial greedy)
+tiempos_normal = []  # Lista para almacenar los tiempos medios (estado inicial normal)
+beneficios_normal = []  # Lista para almacenar los beneficios medios (estado inicial normal)
+
+
+for config in param_configs:
+    tiempos_config_greedy = []
+    tiempos_config_normal = []
+    beneficios_config_greedy = []
+    beneficios_config_normal = []
+   
+    for _ in range(5):
+        # Crea un problema con la configuración actual y estado inicial greedy
+        problem_greedy = BicingProblem(generate_initial_state_greedy(config))
+        tiempo_ms_greedy = [timeit(lambda: hill_climbing(problem_greedy), number=1) * 1000 for _ in range(10)]
+        tiempos_config_greedy.append(np.mean(tiempo_ms_greedy))
+        resultado_heuristica_greedy = hill_climbing(problem_greedy).heuristic()
+        beneficios_config_greedy.append(resultado_heuristica_greedy)
+
+
+        # Crea un problema con la configuración actual y estado inicial normal
+        problem_normal = BicingProblem(generate_initial_state(config))
+        tiempo_ms_normal = [timeit(lambda: hill_climbing(problem_normal), number=1) * 1000 for _ in range(10)]
+        tiempos_config_normal.append(np.mean(tiempo_ms_normal))
+        resultado_heuristica_normal = hill_climbing(problem_normal).heuristic()
+        beneficios_config_normal.append(resultado_heuristica_normal)
+
+
+    tiempos_greedy.append(np.mean(tiempos_config_greedy))
+    beneficios_greedy.append(np.mean(beneficios_config_greedy))
+    tiempos_normal.append(np.mean(tiempos_config_normal))
+    beneficios_normal.append(np.mean(beneficios_config_normal))
+
+
+# Graficamos el tiempo
+plt.figure()
+plt.plot(range(10), tiempos_greedy, marker='o', label='Greedy')
+plt.plot(range(10), tiempos_normal, marker='x', label='Normal')
+plt.title('Tiempo Promedio')
+plt.xlabel('Configuración de Parámetros')
+plt.ylabel('Tiempo (ms)')
+plt.xticks(range(10))
+plt.legend()
+plt.show()
+
+
+# Graficamos el beneficio
+plt.figure()
+plt.plot(range(10), beneficios_greedy, marker='o', color='red', label='Greedy')
+plt.plot(range(10), beneficios_normal, marker='x', color='blue', label='Normal')
+plt.title('Beneficio Promedio')
+plt.xlabel('Configuración de Parámetros')
+plt.ylabel('Beneficio')
+plt.xticks(range(10))
+plt.legend()
+plt.show()
+
+

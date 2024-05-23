@@ -1,0 +1,60 @@
+**EXPERIMENT 6**:
+
+
+# Lista para almacenar los valores de furgos
+furgos_values = []
+# Lista para almacenar las medias de beneficio
+beneficio_values = [] 
+# Lista para almacenar los tiempos en milisegundos
+tiempos_values = []
+
+
+for furgos in range(5, 26, 5):
+    mitjana_benefici = 0
+    temps_en_milisegons = 0
+
+
+    for i in range(10):
+        estaciones = Estaciones(25, 1250, 10 * i)
+        parametres = ProblemParameters(estaciones, furgos)
+        estat_inicial_greedy = generate_initial_state_greedy(parametres)
+        n = hill_climbing(BicingProblem(estat_inicial_greedy))
+        mitjana_benefici += n.heuristic()
+        temps_en_milisegons += (timeit(lambda: hill_climbing(BicingProblem(estat_inicial_greedy)), number=1) * 1000)
+
+
+    print(furgos, "Furgonetes")
+    print("Benefici total", mitjana_benefici)
+    print("Mitjana de benefici",mitjana_benefici/10)
+    print("Benefici mitjà per furgoneta", round(mitjana_benefici/10/furgos,2))
+    print(round(temps_en_milisegons/10,2),"ms")
+    print("")
+    furgos_values.append(furgos)
+    beneficio_values.append(mitjana_benefici / 10)  # Calcula la media de beneficio
+    tiempos_values.append(temps_en_milisegons / 10)
+
+
+
+-- Gràfics:
+
+plt.figure(figsize=(10, 5))
+plt.subplot(121)
+plt.plot(furgos_values, beneficio_values, marker='o', label='Beneficio Medio')
+plt.xlabel('Número de Furgonetas')
+plt.ylabel('Beneficio Medio')
+plt.title('Beneficio Medio por Número de Furgonetas')
+
+# Establecer el límite inferior del eje Y en 0
+plt.ylim(ymin=0)
+
+plt.subplot(122)
+plt.plot(furgos_values, tiempos_values, marker='o', label='Tiempo Promedio')
+plt.xlabel('Número de Furgonetas')
+plt.ylabel('Tiempo Promedio (ms)')
+plt.title('Tiempo Promedio por Número de Furgonetas')
+
+plt.tight_layout()
+
+plt.savefig('beneficis.png')
+
+
